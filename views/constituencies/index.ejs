@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <style>
+        #map {
+            height: 600px;
+            width: 100%;
+            border-radius: 8px;
+        }
+        .constituency-filters {
+            margin-bottom: 20px;
+        }
+        .stats-card {
+            transition: transform 0.2s;
+        }
+        .stats-card:hover {
+            transform: translateY(-5px);
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-4">
+        <h2 class="mb-4"><i class="fas fa-map-marked-alt"></i> Constituency Information</h2>
+
+        <!-- Filters -->
+        <div class="row constituency-filters">
+            <div class="col-md-3">
+                <select class="form-select" id="divisionFilter">
+                    <option value="">All Divisions</option>
+                    <option value="Dhaka">Dhaka</option>
+                    <option value="Chittagong">Chittagong</option>
+                    <option value="Rajshahi">Rajshahi</option>
+                    <option value="Khulna">Khulna</option>
+                    <option value="Barishal">Barishal</option>
+                    <option value="Sylhet">Sylhet</option>
+                    <option value="Rangpur">Rangpur</option>
+                    <option value="Mymensingh">Mymensingh</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <input type="text" class="form-control" id="searchInput" placeholder="Search constituencies...">
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Map -->
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-body">
+                        <div id="map"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Statistics -->
+            <div class="col-md-4">
+                <div class="card mb-3 stats-card">
+                    <div class="card-body">
+                        <h5 class="card-title">Quick Statistics</h5>
+                        <div class="list-group">
+                            <div class="list-group-item">
+                                <div class="d-flex justify-content-between">
+                                    <span>Total Constituencies:</span>
+                                    <strong><%= constituencies.length %></strong>
+                                </div>
+                            </div>
+                            <div class="list-group-item">
+                                <div class="d-flex justify-content-between">
+                                    <span>Active Projects:</span>
+                                    <strong id="activeProjects">Loading...</strong>
+                                </div>
+                            </div>
+                            <div class="list-group-item">
+                                <div class="d-flex justify-content-between">
+                                    <span>Reported Issues:</span>
+                                    <strong id="reportedIssues">Loading...</strong>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Selected Constituency Info -->
+                <div class="card stats-card">
+                    <div class="card-body">
+                        <h5 class="card-title">Selected Constituency</h5>
+                        <div id="selectedConstituencyInfo">
+                            <p class="text-muted">Select a constituency on the map to view details</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Constituency List -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">All Constituencies</h5>
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Code</th>
+                                        <th>Name</th>
+                                        <th>Division</th>
+                                        <th>District</th>
+                                        <th>Representative</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <% constituencies.forEach(function(constituency) { %>
+                                        <tr>
+                                            <td><%= constituency.code %></td>
+                                            <td><%= constituency.name %></td>
+                                            <td><%= constituency.division %></td>
+                                            <td><%= constituency.district %></td>
+                                            <td>
+                                                <% if(constituency.currentRepresentative && constituency.currentRepresentative.name) { %>
+                                                    <%= constituency.currentRepresentative.name %>
+                                                <% } else { %>
+                                                    <span class="text-muted">Not assigned</span>
+                                                <% } %>
+                                            </td>
+                                            <td>
+                                                <a href="/constituencies/<%= constituency.code %>" class="btn btn-primary btn-sm">
+                                                    <i class="fas fa-info-circle"></i> Details
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    <% }); %>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script>
+        // Initialize map
+        const map = L.map('map').setView([23.8103, 90.4125], 7); // Center on Bangladesh
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: ' OpenStreetMap contributors'
+        }).addTo(map);
+
+        // Add markers and polygons for constituencies
+        const constituencies = <%- JSON.stringify(constituencies) %>;
+        const markers = {};
+        const polygons = {};
+
+        // Function to update selected constituency info
+        function updateSelectedConstituencyInfo(constituency) {
+            const infoDiv = document.getElementById('selectedConstituencyInfo');
+            infoDiv.innerHTML = `
+                <h6>${constituency.name}</h6>
+                <ul class="list-unstyled">
+                    <li><strong>Code:</strong> ${constituency.code}</li>
+                    <li><strong>Division:</strong> ${constituency.division}</li>
+                    <li><strong>District:</strong> ${constituency.district}</li>
+                    ${constituency.currentRepresentative ? 
+                        `<li><strong>Representative:</strong> ${constituency.currentRepresentative.name}</li>` : 
+                        '<li><strong>Representative:</strong> Not assigned</li>'}
+                </ul>
+                <a href="/constituencies/${constituency.code}" class="btn btn-primary btn-sm">View Details</a>
+            `;
+        }
+
+        // Style for highlighted area
+        const defaultStyle = {
+            color: '#3388ff',
+            weight: 2,
+            opacity: 0.7,
+            fillOpacity: 0.4,
+            fillColor: '#3388ff'
+        };
+
+        const highlightStyle = {
+            color: '#ff4444',
+            weight: 3,
+            opacity: 1,
+            fillOpacity: 0.6,
+            fillColor: '#ff4444'
+        };
+
+        constituencies.forEach(constituency => {
+            if (constituency.coordinates && constituency.coordinates.coordinates) {
+                // Create marker
+                const marker = L.marker([
+                    constituency.coordinates.coordinates[1],
+                    constituency.coordinates.coordinates[0]
+                ]).addTo(map);
+
+                // Create clickable area (polygon)
+                const polygon = L.circle([
+                    constituency.coordinates.coordinates[1],
+                    constituency.coordinates.coordinates[0]
+                ], {
+                    radius: 15000, // Increased to 15km radius for better visibility
+                    ...defaultStyle
+                }).addTo(map);
+
+                // Add click handlers
+                marker.on('click', () => {
+                    // Reset all polygons to default style
+                    Object.values(polygons).forEach(p => p.setStyle(defaultStyle));
+                    // Highlight selected polygon
+                    polygon.setStyle(highlightStyle);
+                    updateSelectedConstituencyInfo(constituency);
+                });
+
+                polygon.on('click', () => {
+                    // Reset all polygons to default style
+                    Object.values(polygons).forEach(p => p.setStyle(defaultStyle));
+                    // Highlight selected polygon
+                    polygon.setStyle(highlightStyle);
+                    updateSelectedConstituencyInfo(constituency);
+                });
+
+                // Add mouseover effects
+                polygon.on('mouseover', () => {
+                    if (polygon.options.color !== highlightStyle.color) {
+                        polygon.setStyle({
+                            fillOpacity: 0.4
+                        });
+                    }
+                });
+
+                polygon.on('mouseout', () => {
+                    if (polygon.options.color !== highlightStyle.color) {
+                        polygon.setStyle(defaultStyle);
+                    }
+                });
+
+                // Store references
+                markers[constituency.code] = marker;
+                polygons[constituency.code] = polygon;
+
+                // Add popup to both marker and polygon
+                const popupContent = `
+                    <strong>${constituency.name}</strong><br>
+                    Code: ${constituency.code}<br>
+                    Division: ${constituency.division}<br>
+                    <a href="/constituencies/${constituency.code}" class="btn btn-primary btn-sm mt-2">View Details</a>
+                `;
+                marker.bindPopup(popupContent);
+                polygon.bindPopup(popupContent);
+            }
+        });
+
+        // Filter functionality
+        document.getElementById('divisionFilter').addEventListener('change', function() {
+            const division = this.value;
+            
+            constituencies.forEach(constituency => {
+                const marker = markers[constituency.code];
+                const polygon = polygons[constituency.code];
+                
+                if (!division || constituency.division === division) {
+                    if (marker) marker.addTo(map);
+                    if (polygon) polygon.addTo(map);
+                } else {
+                    if (marker) map.removeLayer(marker);
+                    if (polygon) map.removeLayer(polygon);
+                }
+            });
+        });
+
+        // Search functionality
+        document.getElementById('searchInput').addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase();
+            
+            // Update table rows
+            const rows = document.querySelectorAll('tbody tr');
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                row.style.display = text.includes(searchTerm) ? '' : 'none';
+            });
+
+            // Update map markers and polygons
+            constituencies.forEach(constituency => {
+                const marker = markers[constituency.code];
+                const polygon = polygons[constituency.code];
+                const matchesSearch = 
+                    constituency.name.toLowerCase().includes(searchTerm) ||
+                    constituency.code.toLowerCase().includes(searchTerm) ||
+                    constituency.division.toLowerCase().includes(searchTerm) ||
+                    constituency.district.toLowerCase().includes(searchTerm);
+
+                if (matchesSearch) {
+                    if (marker) marker.addTo(map);
+                    if (polygon) polygon.addTo(map);
+                } else {
+                    if (marker) map.removeLayer(marker);
+                    if (polygon) map.removeLayer(polygon);
+                }
+            });
+        });
+    </script>
+</body>
+</html>

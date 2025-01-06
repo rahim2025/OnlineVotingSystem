@@ -1,0 +1,41 @@
+<h1 class="mt-4">Dashboard</h1>
+<p class="lead mb-3">Welcome <%= user.name %></p>
+
+<% if (user.role === 'voter') { %>
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5 class="card-title">Register as Candidate</h5>
+            <form action="/candidates/register" method="POST">
+                <div class="mb-3">
+                    <label for="party" class="form-label">Party Name</label>
+                    <input type="text" class="form-control" id="party" name="party" required>
+                </div>
+                <div class="mb-3">
+                    <label for="manifesto" class="form-label">Manifesto</label>
+                    <textarea class="form-control" id="manifesto" name="manifesto" rows="3" required></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary">Register as Candidate</button>
+            </form>
+        </div>
+    </div>
+<% } %>
+
+<div class="row">
+    <% candidates.forEach(function(candidate) { %>
+        <div class="col-md-4 mb-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title"><%= candidate.user.name %></h5>
+                    <h6 class="card-subtitle mb-2 text-muted"><%= candidate.party %></h6>
+                    <p class="card-text"><%= candidate.manifesto %></p>
+                    <p class="card-text">Votes: <%= candidate.voteCount %></p>
+                    <% if (user.role === 'voter' && !candidate.votes.includes(user._id)) { %>
+                        <form action="/candidates/vote/<%= candidate._id %>" method="POST">
+                            <button type="submit" class="btn btn-success">Vote</button>
+                        </form>
+                    <% } %>
+                </div>
+            </div>
+        </div>
+    <% }); %>
+</div>

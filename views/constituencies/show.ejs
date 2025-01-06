@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/chart.js@3.7.0/dist/chart.min.css">
+    <style>
+        #constituencyMap {
+            height: 300px;
+            width: 100%;
+            border-radius: 8px;
+        }
+        .project-card {
+            transition: transform 0.2s;
+        }
+        .project-card:hover {
+            transform: translateY(-5px);
+        }
+        .performance-indicator {
+            width: 100px;
+            height: 100px;
+            margin: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-4">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="/constituencies">Constituencies</a></li>
+                <li class="breadcrumb-item active"><%= constituency.name %></li>
+            </ol>
+        </nav>
+
+        <div class="row">
+            <!-- Basic Information -->
+            <div class="col-md-8">
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <h2 class="card-title"><%= constituency.name %> (<%= constituency.code %>)</h2>
+                        <div class="row mt-4">
+                            <div class="col-md-6">
+                                <h5><i class="fas fa-info-circle"></i> Basic Information</h5>
+                                <ul class="list-unstyled">
+                                    <li><strong>Division:</strong> <%= constituency.division %></li>
+                                    <li><strong>District:</strong> <%= constituency.district %></li>
+                                    <li><strong>Total Population:</strong> <%= constituency.demographics.totalPopulation.toLocaleString() %></li>
+                                    <li><strong>Voter Count:</strong> <%= constituency.demographics.voterCount.toLocaleString() %></li>
+                                </ul>
+                            </div>
+                            <div class="col-md-6">
+                                <div id="constituencyMap"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Current Representative -->
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title"><i class="fas fa-user-tie"></i> Current Representative</h5>
+                        <% if(constituency.currentRepresentative && constituency.currentRepresentative.name) { %>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <ul class="list-unstyled">
+                                        <li><strong>Name:</strong> <%= constituency.currentRepresentative.name %></li>
+                                        <li><strong>Party:</strong> <%= constituency.currentRepresentative.party %></li>
+                                        <li><strong>Term:</strong> <%= new Date(constituency.currentRepresentative.startTerm).getFullYear() %> - 
+                                            <%= new Date(constituency.currentRepresentative.endTerm).getFullYear() %></li>
+                                    </ul>
+                                </div>
+                                <div class="col-md-6">
+                                    <h6>Contact Information</h6>
+                                    <ul class="list-unstyled">
+                                        <li><i class="fas fa-envelope"></i> <%= constituency.currentRepresentative.contactInfo.email %></li>
+                                        <li><i class="fas fa-phone"></i> <%= constituency.currentRepresentative.contactInfo.phone %></li>
+                                        <li><i class="fas fa-building"></i> <%= constituency.currentRepresentative.contactInfo.office %></li>
+                                    </ul>
+                                </div>
+                            </div>
+                        <% } else { %>
+                            <p class="text-muted">No representative currently assigned</p>
+                        <% } %>
+                    </div>
+                </div>
+
+                <!-- Performance Metrics -->
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title"><i class="fas fa-chart-line"></i> Performance Metrics</h5>
+                        <div class="row text-center">
+                            <div class="col-md-3">
+                                <div class="performance-indicator">
+                                    <canvas id="attendanceChart"></canvas>
+                                </div>
+                                <p>Attendance Rate</p>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="performance-indicator">
+                                    <canvas id="projectsChart"></canvas>
+                                </div>
+                                <p>Projects Completed</p>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="performance-indicator">
+                                    <canvas id="fundChart"></canvas>
+                                </div>
+                                <p>Fund Utilization</p>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="performance-indicator">
+                                    <canvas id="satisfactionChart"></canvas>
+                                </div>
+                                <p>Public Satisfaction</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sidebar -->
+            <div class="col-md-4">
+                <!-- Demographics -->
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title"><i class="fas fa-users"></i> Demographics</h5>
+                        <canvas id="demographicsChart"></canvas>
+                        <div class="mt-3">
+                            <p><strong>Literacy Rate:</strong> <%= constituency.demographics.literacyRate %>%</p>
+                            <p><strong>Average Income:</strong> ৳<%= constituency.demographics.avgIncome.toLocaleString() %></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Report Issue -->
+                <% if(typeof user != 'undefined') { %>
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <h5 class="card-title"><i class="fas fa-exclamation-circle"></i> Report an Issue</h5>
+                            <form id="issueForm">
+                                <div class="mb-3">
+                                    <input type="text" class="form-control" name="title" placeholder="Issue Title" required>
+                                </div>
+                                <div class="mb-3">
+                                    <textarea class="form-control" name="description" rows="3" placeholder="Describe the issue..." required></textarea>
+                                </div>
+                                <div class="mb-3">
+                                    <select class="form-select" name="category" required>
+                                        <option value="">Select Category</option>
+                                        <option value="Infrastructure">Infrastructure</option>
+                                        <option value="Education">Education</option>
+                                        <option value="Healthcare">Healthcare</option>
+                                        <option value="Employment">Employment</option>
+                                        <option value="Environment">Environment</option>
+                                        <option value="Security">Security</option>
+                                        <option value="Other">Other</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <select class="form-select" name="priority" required>
+                                        <option value="">Select Priority</option>
+                                        <option value="High">High</option>
+                                        <option value="Medium">Medium</option>
+                                        <option value="Low">Low</option>
+                                    </select>
+                                </div>
+                                <button type="submit" class="btn btn-primary w-100">Submit Issue</button>
+                            </form>
+                        </div>
+                    </div>
+                <% } else { %>
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <h5 class="card-title"><i class="fas fa-exclamation-circle"></i> Report an Issue</h5>
+                            <p class="text-muted">Please <a href="/users/login">login</a> to report issues in this constituency.</p>
+                        </div>
+                    </div>
+                <% } %>
+
+                <!-- Nearby Constituencies -->
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title"><i class="fas fa-map-marker-alt"></i> Nearby Constituencies</h5>
+                        <div class="list-group">
+                            <% nearbyConstituencies.forEach(function(nearby) { %>
+                                <a href="/constituencies/<%= nearby.code %>" class="list-group-item list-group-item-action">
+                                    <%= nearby.name %>
+                                </a>
+                            <% }); %>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Projects and Issues -->
+        <div class="row mt-4">
+            <!-- Development Projects -->
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title"><i class="fas fa-project-diagram"></i> Development Projects</h5>
+                        <div class="accordion" id="projectsAccordion">
+                            <% constituency.projects.forEach(function(project, index) { %>
+                                <div class="accordion-item project-card">
+                                    <h2 class="accordion-header">
+                                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                                                data-bs-target="#project<%= index %>">
+                                            <%= project.name %>
+                                            <span class="badge bg-<%= project.status === 'Completed' ? 'success' : 
+                                                                    project.status === 'In Progress' ? 'primary' : 
+                                                                    project.status === 'Delayed' ? 'warning' : 'secondary' %> ms-2">
+                                                <%= project.status %>
+                                            </span>
+                                        </button>
+                                    </h2>
+                                    <div id="project<%= index %>" class="accordion-collapse collapse">
+                                        <div class="accordion-body">
+                                            <p><%= project.description %></p>
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <p><strong>Budget:</strong> ৳<%= project.budget.toLocaleString() %></p>
+                                                    <p><strong>Category:</strong> <%= project.category %></p>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <p><strong>Start Date:</strong> <%= new Date(project.startDate).toLocaleDateString() %></p>
+                                                    <p><strong>End Date:</strong> <%= new Date(project.endDate).toLocaleDateString() %></p>
+                                                </div>
+                                            </div>
+                                            <div class="progress mt-2">
+                                                <div class="progress-bar" role="progressbar" style="width: <%= project.progress %>%">
+                                                    <%= project.progress %>%
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            <% }); %>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Reported Issues -->
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title"><i class="fas fa-exclamation-triangle"></i> Reported Issues</h5>
+                        <div class="accordion" id="issuesAccordion">
+                            <% constituency.issues.forEach(function(issue, index) { %>
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header">
+                                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                                                data-bs-target="#issue<%= index %>">
+                                            <%= issue.title %>
+                                            <span class="badge bg-<%= issue.priority === 'High' ? 'danger' : 
+                                                                    issue.priority === 'Medium' ? 'warning' : 'info' %> ms-2">
+                                                <%= issue.priority %>
+                                            </span>
+                                        </button>
+                                    </h2>
+                                    <div id="issue<%= index %>" class="accordion-collapse collapse">
+                                        <div class="accordion-body">
+                                            <p><%= issue.description %></p>
+                                            <div class="d-flex justify-content-between">
+                                                <span><strong>Category:</strong> <%= issue.category %></span>
+                                                <span><strong>Status:</strong> 
+                                                    <span class="badge bg-<%= issue.status === 'Resolved' ? 'success' : 
+                                                                            issue.status === 'In Progress' ? 'primary' : 'secondary' %>">
+                                                        <%= issue.status %>
+                                                    </span>
+                                                </span>
+                                            </div>
+                                            <small class="text-muted">Reported on <%= new Date(issue.createdAt).toLocaleDateString() %></small>
+                                        </div>
+                                    </div>
+                                </div>
+                            <% }); %>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // Initialize map
+        const constituencyMap = L.map('constituencyMap').setView([
+            <%= constituency.coordinates.coordinates[1] %>,
+            <%= constituency.coordinates.coordinates[0] %>
+        ], 10);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(constituencyMap);
+
+        L.marker([
+            <%= constituency.coordinates.coordinates[1] %>,
+            <%= constituency.coordinates.coordinates[0] %>
+        ]).addTo(constituencyMap);
+
+        // Demographics Chart
+        new Chart(document.getElementById('demographicsChart'), {
+            type: 'pie',
+            data: {
+                labels: ['Male', 'Female'],
+                datasets: [{
+                    data: [
+                        <%= constituency.demographics.malePopulation %>,
+                        <%= constituency.demographics.femalePopulation %>
+                    ],
+                    backgroundColor: ['#36a2eb', '#ff6384']
+                }]
+            }
+        });
+
+        // Performance Charts
+        function createGaugeChart(canvasId, value, label) {
+            new Chart(document.getElementById(canvasId), {
+                type: 'doughnut',
+                data: {
+                    datasets: [{
+                        data: [value, 100 - value],
+                        backgroundColor: ['#36a2eb', '#eee']
+                    }]
+                },
+                options: {
+                    cutout: '80%',
+                    plugins: {
+                        tooltip: { enabled: false },
+                        legend: { display: false }
+                    }
+                }
+            });
+        }
+
+        createGaugeChart('attendanceChart', <%= constituency.performance.attendanceRate %>);
+        createGaugeChart('projectsChart', <%= constituency.performance.projectsCompleted %>);
+        createGaugeChart('fundChart', <%= constituency.performance.fundUtilization %>);
+        createGaugeChart('satisfactionChart', <%= constituency.performance.publicSatisfaction %>);
+
+        // Issue Form Handler
+        <% if(typeof user != 'undefined') { %>
+            document.getElementById('issueForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const formData = new FormData(e.target);
+                try {
+                    const response = await fetch('/constituencies/<%= constituency.code %>/issues', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(Object.fromEntries(formData))
+                    });
+                    const data = await response.json();
+                    if (data.success) {
+                        alert('Issue reported successfully');
+                        location.reload();
+                    } else {
+                        alert('Error reporting issue');
+                    }
+                } catch (err) {
+                    console.error('Error:', err);
+                    alert('Error reporting issue');
+                }
+            });
+        <% } %>
+    </script>
+</body>
+</html>

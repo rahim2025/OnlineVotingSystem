@@ -1,0 +1,82 @@
+<!-- Candidates List -->
+<div class="container mt-4">
+    <h2 class="text-center mb-4">Our Party Leaders</h2>
+    
+    <div class="row g-4">
+        <% if(candidates.length > 0) { %>
+            <% candidates.forEach(function(candidate) { %>
+                <div class="col-md-4">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <div class="text-center mb-3">
+                                <i class="fas fa-user-tie fa-3x text-primary"></i>
+                            </div>
+                            <h5 class="card-title text-center"><%= candidate.user.name %></h5>
+                            <h6 class="card-subtitle mb-2 text-muted text-center"><%= candidate.party %></h6>
+                            <hr>
+                            <p class="card-text">
+                                <strong>Vision & Mission:</strong><br>
+                                <%= candidate.manifesto %>
+                            </p>
+                            <div class="d-flex justify-content-between align-items-center mt-3">
+                                <small class="text-muted">
+                                    <i class="fas fa-envelope"></i> <%= candidate.user.email %>
+                                </small>
+                                <span class="badge bg-primary">
+                                    <i class="fas fa-poll"></i> <%= candidate.voteCount %> Supporters
+                                </span>
+                            </div>
+                        </div>
+                        <div class="card-footer bg-transparent">
+                            <% if (user.role === 'voter' && !candidate.votes.includes(user._id)) { %>
+                                <form action="/candidates/vote/<%= candidate._id %>" method="POST" class="text-center">
+                                    <button type="submit" class="btn btn-success w-100">
+                                        <i class="fas fa-thumbs-up"></i> Support
+                                    </button>
+                                </form>
+                            <% } else if (candidate.votes.includes(user._id)) { %>
+                                <button class="btn btn-secondary w-100" disabled>
+                                    <i class="fas fa-check"></i> Supported
+                                </button>
+                            <% } %>
+                        </div>
+                    </div>
+                </div>
+            <% }); %>
+        <% } else { %>
+            <div class="col-12">
+                <div class="alert alert-info text-center">
+                    <i class="fas fa-info-circle"></i> No party leaders registered yet.
+                </div>
+            </div>
+        <% } %>
+    </div>
+
+    <% if (user.role === 'voter') { %>
+        <div class="mt-5">
+            <div class="card">
+                <div class="card-body">
+                    <h3 class="card-title text-center">Join Our Leadership</h3>
+                    <p class="text-center text-muted">Share your vision for a better Bangladesh</p>
+                    <form action="/candidates/register" method="POST">
+                        <div class="mb-3">
+                            <label for="party" class="form-label">Position/Role</label>
+                            <input type="text" class="form-control" id="party" name="party" required 
+                                placeholder="e.g., General Secretary, Youth Leader, etc.">
+                        </div>
+                        <div class="mb-3">
+                            <label for="manifesto" class="form-label">Your Vision & Mission</label>
+                            <textarea class="form-control" id="manifesto" name="manifesto" rows="4" required
+                                placeholder="Share your vision for the party and Bangladesh..."></textarea>
+                        </div>
+                        <div class="text-center">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-handshake"></i> Register as Leader
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    <% } %>
+</div>

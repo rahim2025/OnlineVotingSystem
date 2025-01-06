@@ -1,0 +1,96 @@
+<div class="container mt-4">
+    <!-- Election Details -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <h2 class="card-title">
+                <%= election.name %>
+                <% if(new Date(election.endTime) < new Date()) { %>
+                    <span class="badge bg-secondary">Completed</span>
+                <% } else { %>
+                    <span class="badge bg-success">Active</span>
+                <% } %>
+            </h2>
+            <h6 class="card-subtitle mb-2 text-muted">
+                <i class="fas fa-map-marker-alt"></i> <%= election.location %>
+            </h6>
+            <p class="card-text"><%= election.description %></p>
+            
+            <div class="mb-3">
+                <small class="text-muted">
+                    <i class="fas fa-user"></i> Created by: <%= election.createdBy.name %><br>
+                    <i class="fas fa-clock"></i> Ends: <%= new Date(election.endTime).toLocaleString() %>
+                </small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Candidates Section -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h3 class="mb-4"><i class="fas fa-users"></i> Candidates</h3>
+            <% if(election.candidates.length > 0) { %>
+                <div class="row g-4">
+                    <% election.candidates.forEach(function(candidate) { %>
+                        <div class="col-md-6">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <h5 class="card-title"><%= candidate.user.name %></h5>
+                                    <p class="card-text"><%= candidate.manifesto %></p>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span class="badge bg-primary">
+                                            <i class="fas fa-poll"></i> <%= candidate.voteCount %> votes
+                                        </span>
+                                        <% if(new Date(election.endTime) > new Date() && currentUser && !candidate.votes.includes(currentUser._id)) { %>
+                                            <form action="/elections/<%= election._id %>/vote/<%= candidate._id %>" method="POST" class="d-inline">
+                                                <button type="submit" class="btn btn-success btn-sm">
+                                                    <i class="fas fa-vote-yea"></i> Vote
+                                                </button>
+                                            </form>
+                                        <% } else if(candidate.votes.includes(currentUser._id)) { %>
+                                            <span class="badge bg-success">
+                                                <i class="fas fa-check"></i> Voted
+                                            </span>
+                                        <% } %>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    <% }); %>
+                </div>
+            <% } else { %>
+                <div class="alert alert-info">
+                    No candidates have registered for this election yet.
+                </div>
+            <% } %>
+        </div>
+
+        <!-- Stand for Election Form -->
+        <div class="col-md-4">
+            <% if(new Date(election.endTime) > new Date() && 
+                currentUser && 
+                !election.candidates.some(c => c.user._id.toString() === currentUser._id.toString())) { %>
+                <div class="card">
+                    <div class="card-body">
+                        <h4 class="card-title">Stand for Election</h4>
+                        <form action="/elections/<%= election._id %>/stand" method="POST">
+                            <div class="mb-3">
+                                <label for="manifesto" class="form-label">Your Manifesto</label>
+                                <textarea class="form-control" id="manifesto" name="manifesto" rows="4" required
+                                    placeholder="Share your vision and plans..."></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="fas fa-handshake"></i> Register as Candidate
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            <% } %>
+        </div>
+    </div>
+
+    <div class="text-center">
+        <a href="/elections" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Back to Elections
+        </a>
+    </div>
+</div>

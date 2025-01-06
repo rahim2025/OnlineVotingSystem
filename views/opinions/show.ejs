@@ -1,0 +1,127 @@
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <!-- Opinion Card -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h2 class="card-title"><%= opinion.title %></h2>
+                    <h6 class="card-subtitle mb-3 text-muted">
+                        <i class="fas fa-user"></i> <%= opinion.author.name %> · 
+                        <i class="fas fa-clock"></i> <%= new Date(opinion.createdAt).toLocaleDateString() %>
+                    </h6>
+
+                    <p class="card-text"><%= opinion.content %></p>
+
+                    <div class="mb-3">
+                        <% if(opinion.tags && opinion.tags.length > 0) { %>
+                            <% opinion.tags.forEach(function(tag) { %>
+                                <span class="badge bg-secondary me-1">#<%= tag %></span>
+                            <% }); %>
+                        <% } %>
+                    </div>
+
+                    <div class="d-flex align-items-center">
+                        <% if(typeof user != 'undefined') { %>
+                            <button class="btn btn-outline-primary like-btn" data-opinion-id="<%= opinion._id %>"
+                                    data-liked="<%= opinion.likes.includes(user._id) %>">
+                                <i class="fas fa-heart"></i> 
+                                <span class="like-count"><%= opinion.likes.length %></span>
+                            </button>
+                        <% } else { %>
+                            <a href="/users/login" class="btn btn-outline-primary">
+                                <i class="fas fa-heart"></i> 
+                                <span class="like-count"><%= opinion.likes.length %></span>
+                            </a>
+                        <% } %>
+                        <small class="text-muted ms-3">
+                            <i class="fas fa-comments"></i> <%= opinion.comments.length %> Comments
+                        </small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Comments Section -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h4 class="card-title mb-4">Comments</h4>
+
+                    <!-- Comment Form -->
+                    <% if(typeof user != 'undefined') { %>
+                        <form action="/opinions/<%= opinion._id %>/comment" method="POST" class="mb-4">
+                            <div class="mb-3">
+                                <textarea class="form-control" name="content" rows="3" required
+                                    placeholder="Share your thoughts on this opinion..."></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-paper-plane"></i> Post Comment
+                            </button>
+                        </form>
+                    <% } else { %>
+                        <div class="alert alert-info mb-4">
+                            <i class="fas fa-info-circle"></i> 
+                            <a href="/users/login" class="alert-link">Login</a> to post a comment.
+                        </div>
+                    <% } %>
+
+                    <!-- Comments List -->
+                    <% if(opinion.comments.length > 0) { %>
+                        <% opinion.comments.forEach(function(comment) { %>
+                            <div class="border-bottom mb-3 pb-3">
+                                <div class="d-flex justify-content-between">
+                                    <h6 class="mb-1">
+                                        <i class="fas fa-user"></i> <%= comment.user.name %>
+                                    </h6>
+                                    <small class="text-muted">
+                                        <i class="fas fa-clock"></i> <%= new Date(comment.createdAt).toLocaleDateString() %>
+                                    </small>
+                                </div>
+                                <p class="mb-0"><%= comment.content %></p>
+                            </div>
+                        <% }); %>
+                    <% } else { %>
+                        <p class="text-muted">
+                            No comments yet. 
+                            <% if(typeof user != 'undefined') { %>
+                                Be the first to comment!
+                            <% } else { %>
+                                Login to be the first to comment!
+                            <% } %>
+                        </p>
+                    <% } %>
+                </div>
+            </div>
+
+            <div class="text-center">
+                <a href="/opinions" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Back to Opinions
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<% if(typeof user != 'undefined') { %>
+<script>
+document.querySelector('.like-btn').addEventListener('click', async () => {
+    const button = document.querySelector('.like-btn');
+    const opinionId = button.dataset.opinionId;
+    try {
+        const response = await fetch(`/opinions/${opinionId}/like`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        const data = await response.json();
+        if (data.success) {
+            const likeCount = button.querySelector('.like-count');
+            likeCount.textContent = data.likes;
+            button.dataset.liked = button.dataset.liked === 'true' ? 'false' : 'true';
+            button.classList.toggle('active');
+        }
+    } catch (err) {
+        console.error('Error:', err);
+    }
+});
+</script>
+<% } %>

@@ -1,0 +1,52 @@
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-vote-yea"></i> Local Elections</h2>
+        <a href="/elections/create" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Create New Election
+        </a>
+    </div>
+
+    <div class="row g-4">
+        <% if(elections.length > 0) { %>
+            <% elections.forEach(function(election) { %>
+                <div class="col-md-6">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <h5 class="card-title">
+                                <%= election.name %>
+                                <% if(new Date(election.endTime) < new Date()) { %>
+                                    <span class="badge bg-secondary">Completed</span>
+                                <% } else { %>
+                                    <span class="badge bg-success">Active</span>
+                                <% } %>
+                            </h5>
+                            <h6 class="card-subtitle mb-2 text-muted">
+                                <i class="fas fa-map-marker-alt"></i> <%= election.location %>
+                            </h6>
+                            <p class="card-text"><%= election.description %></p>
+                            
+                            <div class="mb-3">
+                                <small class="text-muted">
+                                    <i class="fas fa-user"></i> Created by: <%= election.createdBy.name %><br>
+                                    <i class="fas fa-clock"></i> Ends: <%= new Date(election.endTime).toLocaleString() %><br>
+                                    <i class="fas fa-users"></i> Candidates: <%= election.candidates.length %>
+                                </small>
+                            </div>
+                            
+                            <a href="/elections/<%= election._id %>" class="btn btn-primary">
+                                <i class="fas fa-info-circle"></i> View Details
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            <% }); %>
+        <% } else { %>
+            <div class="col-12">
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> No elections have been created yet.
+                    <a href="/elections/create" class="alert-link">Create the first one!</a>
+                </div>
+            </div>
+        <% } %>
+    </div>
+</div>
