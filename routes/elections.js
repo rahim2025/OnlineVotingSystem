@@ -4,8 +4,11 @@ const { ensureAuthenticated } = require('../config/auth');
 const Election = require('../models/Election');
 const User = require('../models/User');
 
+// Apply authentication middleware to all election routes
+router.use(ensureAuthenticated);
+
 // Get all elections
-router.get('/', ensureAuthenticated, async (req, res) => {
+router.get('/', async (req, res) => {
     try {
         const elections = await Election.find()
             .populate('createdBy', ['name', 'email'])
@@ -24,12 +27,12 @@ router.get('/', ensureAuthenticated, async (req, res) => {
 });
 
 // Show create election form
-router.get('/create', ensureAuthenticated, (req, res) => {
+router.get('/create', (req, res) => {
     res.render('elections/create');
 });
 
 // Create new election
-router.post('/create', ensureAuthenticated, async (req, res) => {
+router.post('/create', async (req, res) => {
     try {
         const { name, location, description, endTime } = req.body;
         const newElection = new Election({
@@ -50,7 +53,7 @@ router.post('/create', ensureAuthenticated, async (req, res) => {
 });
 
 // Show single election
-router.get('/:id', ensureAuthenticated, async (req, res) => {
+router.get('/:id', async (req, res) => {
     try {
         const election = await Election.findById(req.params.id)
             .populate('createdBy', ['name', 'email'])
@@ -73,7 +76,7 @@ router.get('/:id', ensureAuthenticated, async (req, res) => {
 });
 
 // Stand for election
-router.post('/:id/stand', ensureAuthenticated, async (req, res) => {
+router.post('/:id/stand', async (req, res) => {
     try {
         const election = await Election.findById(req.params.id);
         if (!election) {
@@ -106,7 +109,7 @@ router.post('/:id/stand', ensureAuthenticated, async (req, res) => {
 });
 
 // Vote in election
-router.post('/:id/vote/:candidateId', ensureAuthenticated, async (req, res) => {
+router.post('/:id/vote/:candidateId', async (req, res) => {
     try {
         const election = await Election.findById(req.params.id);
         if (!election) {

@@ -15,10 +15,10 @@
                 <li class="nav-item">
                     <a class="nav-link" href="/constituencies"><i class="fas fa-map-marked-alt"></i> Constituencies</a>
                 </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/elections" onclick="return checkAuth(event)"><i class="fas fa-vote-yea"></i> Local Elections</a>
+                </li>
                 <% if(typeof user != 'undefined'){ %>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/elections"><i class="fas fa-vote-yea"></i> Local Elections</a>
-                    </li>
                     <li class="nav-item">
                         <a class="nav-link" href="/users/logout"><i class="fas fa-sign-out-alt"></i> Logout</a>
                     </li>
@@ -34,3 +34,27 @@
         </div>
     </div>
 </nav>
+
+<script>
+function checkAuth(event) {
+    <% if(typeof user == 'undefined') { %>
+        event.preventDefault();
+        Swal.fire({
+            title: 'Authentication Required',
+            text: 'Please log in to access Local Elections',
+            icon: 'info',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Login Now',
+            cancelButtonText: 'Later'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                window.location.href = '/users/login';
+            }
+        });
+        return false;
+    <% } %>
+    return true;
+}
+</script>
